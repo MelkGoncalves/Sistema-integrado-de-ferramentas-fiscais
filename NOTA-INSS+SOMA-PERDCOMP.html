@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Leitor de Notas Fiscais INSS</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+  .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; }
+  header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }
+  h1 { font-size: 1.8em; margin-bottom: 5px; }
+  .upload-area { padding: 30px; text-align: center; border-bottom: 1px solid #e0e0e0; }
+  .file-input-wrapper { position: relative; display: inline-block; margin-bottom: 15px; }
+  input[type="file"] { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; left: 0; top: 0; }
+  .file-input-label { display: inline-block; padding: 15px 30px; background: #667eea; color: white; border-radius: 5px; cursor: pointer; margin-right: 10px; font-size: 1.1em; transition: all 0.3s ease; }
+  .file-input-label:hover { background: #5a6fd8; transform: translateY(-2px); }
+  .btn-clear { padding: 15px 30px; background: #ef4444; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1.1em; transition: all 0.3s ease; }
+  .btn-clear:hover { background: #dc2626; transform: translateY(-2px); }
+  .file-names { margin-top: 15px; color: #666; max-height: 150px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px; background: #f8f9ff; }
+  .file-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; margin: 5px 0; background: white; border-radius: 4px; border: 1px solid #e0e0e0; }
+  .file-remove { background: #ef4444; color: white; border: none; border-radius: 3px; padding: 4px 10px; cursor: pointer; font-size: 0.9em; transition: background 0.3s ease; }
+  .file-remove:hover { background: #dc2626; }
+  .loading { display: none; text-align: center; padding: 15px; color: #667eea; font-size: 1.1em; }
+  .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .perdcomp-section { display: none; padding: 20px; background: #fff3cd; border-bottom: 1px solid #ffc107; }
+  .perdcomp-controls { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 15px; }
+  .perdcomp-controls input, .perdcomp-controls select { padding: 10px 15px; border: 1px solid #ffc107; border-radius: 5px; font-size: 1em; }
+  .btn-perdcomp { padding: 10px 20px; background: #ffc107; color: #856404; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; transition: all 0.3s ease; }
+  .btn-perdcomp:hover { background: #ffb300; transform: translateY(-2px); }
+  .perdcomp-table { width: 100%; border-collapse: collapse; background: white; border-radius: 5px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+  .perdcomp-table th { background: #ffc107; color: #856404; padding: 12px; text-align: left; font-weight: bold; }
+  .perdcomp-table td { padding: 12px; border-bottom: 1px solid #f0f0f0; }
+  .btn-remove { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer; transition: background 0.3s ease; }
+  .btn-remove:hover { background: #dc2626; }
+  .stats-panel { display: none; padding: 20px; background: #f8f9ff; border-bottom: 1px solid #e0e0e0; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px; }
+  .stat-card { background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.3s ease; }
+  .stat-card:hover { transform: translateY(-2px); }
+  .stat-label { color: #666; font-size: 0.9em; margin-bottom: 8px; }
+  .stat-value { color: #667eea; font-size: 1.4em; font-weight: bold; }
+  .filters-section { display: none; padding: 20px; border-bottom: 1px solid #e0e0e0; }
+  .filters { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; }
+  .filter-group { display: flex; flex-direction: column; flex: 1; min-width: 200px; }
+  .filter-group label { margin-bottom: 5px; font-weight: bold; color: #555; }
+  .filter-group input, .filter-group select { padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em; }
+  .filter-buttons { display: flex; gap: 10px; justify-content: center; }
+  button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; transition: all 0.3s ease; }
+  .btn-primary { background: #667eea; color: white; }
+  .btn-primary:hover { background: #5a6fd8; transform: translateY(-2px); }
+  .btn-secondary { background: white; color: #667eea; border: 1px solid #667eea; }
+  .btn-secondary:hover { background: #f8f9ff; transform: translateY(-2px); }
+  .table-container { padding: 20px; overflow-x: auto; max-height: 500px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; background: white; }
+  th { background: #667eea; color: white; padding: 12px; text-align: left; font-weight: bold; position: sticky; top: 0; }
+  td { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+  .situacao-normal { color: #10b981; font-weight: bold; }
+  .situacao-cancelada { color: #ef4444; font-weight: bold; }
+  tr:hover { background: #f8f9ff; }
+  .export-section { display: none; padding: 20px; text-align: center; background: #f8f9ff; }
+  .export-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 15px; flex-wrap: wrap; }
+  .notification { position: fixed; top: 20px; right: 20px; padding: 15px 25px; background: #10b981; color: white; border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 1000; font-weight: bold; }
+  .notification.error { background: #ef4444; }
+  .notification.warning { background: #f59e0b; }
+  @media (max-width: 768px) {
+    .perdcomp-controls, .filters { flex-direction: column; }
+    .export-buttons { flex-direction: column; }
+    .file-input-label, .btn-clear { width: 100%; margin-bottom: 10px; }
+    .stats-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  
+<!-- Botão Voltar ao Início -->
+<div style="position: fixed; top: 20px; left: 20px; z-index: 1000;">
+    <a href="index.html" style="display: inline-block; background: #667eea; color: white; padding: 12px 20px; border-radius: 25px; text-decoration: none; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s ease; border: 2px solid white;">
+        🏠 Voltar ao Início
+    </a>
+</div>
+
+<div class="container">
+  <header>
+    <h1>📊 Leitor de Notas Fiscais INSS</h1>
+    <p>Carregue múltiplos arquivos CSV (Ctrl+Click para selecionar vários)</p>
+  </header>
+
+  <div class="upload-area">
+    <div class="file-input-wrapper">
+      <input type="file" id="arquivoCSV" accept=".csv" multiple>
+      <label for="arquivoCSV" class="file-input-label">📁 Selecionar Arquivos CSV (Múltiplos)</label>
+    </div>
+    <br>
+    <button class="btn-clear" id="btnLimpar" onclick="limparTudo()" style="display: none;">🗑️ Limpar Tudo</button>
+    <div class="file-names" id="fileNames">
+      <div style="text-align: center; color: #999; padding: 20px;">Nenhum arquivo selecionado</div>
+    </div>
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Processando arquivos...</p>
+    </div>
+  </div>
+
+  <div class="perdcomp-section" id="perdcompSection">
+    <h3>⚙️ Configurar PERD COMP por Mês</h3>
+    <div class="perdcomp-controls">
+      <input type="text" id="valorPerdComp" placeholder="R$ 0,00" value="R$ 0,00">
+      <input type="text" id="numeroPerdCompRestituicao" placeholder="Nº PERD COMP RESTITUIÇÃO">
+      <input type="text" id="perdCompCompensacao" placeholder="PERD COMP COMPENSAÇÃO">
+      <select id="mesPerdComp"><option value="">Selecione o mês</option></select>
+      <button class="btn-perdcomp" onclick="adicionarPerdComp()">➕ Adicionar PERD COMP</button>
+    </div>
+    <table class="perdcomp-table">
+      <thead>
+        <tr><th>Mês/Ano</th><th>Valor PERD COMP</th><th>Nº Restituição</th><th>Compensação</th><th>Ações</th></tr>
+      </thead>
+      <tbody id="tabelaPerdComp">
+        <tr><td colspan="5" style="text-align: center; color: #999;">Nenhum PERD COMP adicionado</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="stats-panel" id="statsPanel">
+    <h3>📈 Estatísticas</h3>
+    <div class="stats-grid" id="statsGrid"></div>
+  </div>
+
+  <div class="filters-section" id="filtersSection">
+    <h3>🔍 Filtros</h3>
+    <div class="filters">
+      <div class="filter-group"><label>Mês/Ano:</label><input type="text" id="filtroMes" placeholder="MM/AAAA"></div>
+      <div class="filter-group"><label>Número NFS-e:</label><input type="text" id="filtroNumero" placeholder="Número NFS-e"></div>
+      <div class="filter-group"><label>Situação:</label>
+        <select id="filtroSituacao">
+          <option value="">Todas</option>
+          <option value="Normal">Normal</option>
+          <option value="Cancelada">Cancelada</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-buttons">
+      <button class="btn-primary" onclick="filtrarDados()">Aplicar Filtros</button>
+      <button class="btn-secondary" onclick="limparFiltros()">Limpar Filtros</button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table id="tabela">
+      <thead>
+        <tr><th>Data</th><th>Nº NFS-e</th><th>Valor</th><th>INSS</th><th>Situação</th><th>Arquivo</th></tr>
+      </thead>
+      <tbody id="tabelaBody">
+        <tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;">Carregue arquivos CSV para visualizar os dados</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="export-section" id="exportSection">
+    <h3>💾 Exportar Dados</h3>
+    <div class="export-buttons">
+      <button class="btn-primary" onclick="exportarCSV()">📄 Exportar CSV</button>
+      <button class="btn-primary" onclick="exportarExcel()">📊 Exportar Excel (.xlsx)</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+<script>
+let dadosOriginais = [];
+let dadosFiltrados = [];
+let perdCompPorMes = {};
+let arquivosCarregados = [];
+
+function mostrarMensagem(mensagem, tipo = 'success') {
+  const notification = document.createElement('div');
+  notification.className = `notification ${tipo === 'success' ? '' : tipo}`;
+  notification.textContent = mensagem;
+  document.body.appendChild(notification);
+  setTimeout(() => notification.remove(), 4000);
+}
+
+function formatarMoeda(valor) {
+  const num = Number(valor) || 0;
+  return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function converterMoedaParaNumero(valorString) {
+  if (!valorString || valorString === '') return 0;
+  const limpo = valorString.toString().replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
+  const numero = parseFloat(limpo) || 0;
+  return numero;
+}
+
+function encontrarColuna(headers, nomes) {
+  for (let nome of nomes) {
+    const lower = nome.toLowerCase();
+    const index = headers.findIndex(h => h.toLowerCase().includes(lower));
+    if (index !== -1) return index;
+  }
+  return -1;
+}
+
+function slugSituacao(text) {
+  return text.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').toLowerCase();
+}
+
+document.getElementById('arquivoCSV').addEventListener('change', function(e) {
+  const files = Array.from(e.target.files);
+  if (files.length === 0) { mostrarMensagem('Nenhum arquivo selecionado', 'warning'); return; }
+
+  const arquivosInvalidos = files.filter(file => !file.name.toLowerCase().endsWith('.csv'));
+  if (arquivosInvalidos.length > 0) {
+    mostrarMensagem(`Arquivos inválidos: ${arquivosInvalidos.map(f => f.name).join(', ')}`, 'error');
+    return;
+  }
+
+  files.forEach(file => {
+    if (!arquivosCarregados.some(f => f.name === file.name && f.size === file.size)) {
+      arquivosCarregados.push(file);
+    }
+  });
+
+  atualizarListaArquivos();
+  processarTodosArquivos();
+});
+
+function atualizarListaArquivos() {
+  const fileNamesDiv = document.getElementById('fileNames');
+  if (arquivosCarregados.length === 0) {
+    fileNamesDiv.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">Nenhum arquivo selecionado</div>';
+    document.getElementById('btnLimpar').style.display = 'none';
+    return;
+  }
+  fileNamesDiv.innerHTML = arquivosCarregados.map((file, index) => `
+    <div class="file-item">
+      <span>📄 ${file.name} (${formatarBytes(file.size)})</span>
+      <button class="file-remove" onclick="removerArquivo(${index})" title="Remover arquivo">×</button>
+    </div>
+  `).join('');
+  document.getElementById('btnLimpar').style.display = 'inline-block';
+}
+
+function formatarBytes(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024; const sizes = ['Bytes','KB','MB','GB']; const i = Math.floor(Math.log(bytes)/Math.log(k));
+  return parseFloat((bytes/Math.pow(k,i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function removerArquivo(index) {
+  const arquivoRemovido = arquivosCarregados[index];
+  arquivosCarregados.splice(index, 1);
+  atualizarListaArquivos();
+  if (arquivosCarregados.length === 0) {
+    limparTudo();
+    mostrarMensagem(`Arquivo "${arquivoRemovido.name}" removido`);
+  } else {
+    processarTodosArquivos();
+    mostrarMensagem(`Arquivo "${arquivoRemovido.name}" removido. Processando arquivos restantes...`);
+  }
+}
+
+function processarTodosArquivos() {
+  if (arquivosCarregados.length === 0) return;
+  document.getElementById('loading').style.display = 'block';
+
+  let todosOsDados = [];
+  let arquivosProcessados = 0;
+  let arquivosComErro = [];
+
+  arquivosCarregados.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        const csv = ev.target.result;
+        const dadosArquivo = processarCSV(csv, file.name);
+        todosOsDados = todosOsDados.concat(dadosArquivo);
+      } catch (error) {
+        console.error(`Erro no arquivo ${file.name}:`, error);
+        arquivosComErro.push(file.name);
+      }
+      arquivosProcessados++;
+      if (arquivosProcessados === arquivosCarregados.length) {
+        document.getElementById('loading').style.display = 'none';
+        if (todosOsDados.length > 0) {
+          finalizarProcessamento(todosOsDados);
+          if (arquivosComErro.length > 0) {
+            mostrarMensagem(`${todosOsDados.length} registros de ${arquivosCarregados.length - arquivosComErro.length} arquivo(s) carregados. Erros em: ${arquivosComErro.join(', ')}`, 'warning');
+          } else {
+            mostrarMensagem(`✅ ${todosOsDados.length} registros de ${arquivosCarregados.length} arquivo(s) carregados com sucesso!`);
+          }
+        } else {
+          mostrarMensagem('Nenhum dado válido encontrado nos arquivos', 'error');
+        }
+      }
+    };
+    reader.onerror = function() {
+      arquivosComErro.push(file.name);
+      arquivosProcessados++;
+      if (arquivosProcessados === arquivosCarregados.length) {
+        document.getElementById('loading').style.display = 'none';
+        if (todosOsDados.length > 0) finalizarProcessamento(todosOsDados);
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+}
+
+function processarCSV(csv, nomeArquivo) {
+  const semBOM = csv.replace(/^\uFEFF/, '');
+  const linhas = semBOM.split(/\r?\n/).filter(l => l.trim() !== '');
+  if (linhas.length < 2) throw new Error('Arquivo CSV vazio ou inválido');
+
+  const primeiraLinha = linhas[0];
+  const temPontoVirgula = (primeiraLinha.match(/;/g) || []).length >= 1;
+  const temVirgula = (primeiraLinha.match(/,/g) || []).length >= 1;
+  const delimitador = temPontoVirgula ? ';' : (temVirgula ? ',' : ';');
+
+  const headers = linhas[0].split(delimitador).map(h => h.trim().replace(/"/g, ''));
+
+  const colunaData = encontrarColuna(headers, ['data','date','emissao','dt','data_emissao','emissão']);
+  
+  let colunaNumero = -1;
+  colunaNumero = headers.findIndex(h => {
+    const headerClean = h.toLowerCase().replace(/["']/g, '').trim();
+    return headerClean === 'nº nfs-e' || 
+           headerClean === 'n° nfs-e' || 
+           headerClean === 'nº nfs e' ||
+           headerClean === 'numero nfs-e' ||
+           headerClean === 'nfs-e';
+  });
+  
+  if (colunaNumero === -1) {
+    colunaNumero = encontrarColuna(headers, ['nfs-e','nfs','numero','número','nota','nf','nº','n°']);
+  }
+
+  const colunaValor = encontrarColuna(headers, ['valor','total','amount','vlr','valor_total','vlor','vl_total']);
+  const colunaINSS = encontrarColuna(headers, ['inss','retencao','retenção','retention','ir','imposto','retido']);
+  const colunaSituacao = 22;
+
+  if (colunaData === -1 || colunaNumero === -1 || colunaValor === -1) {
+    throw new Error('Colunas obrigatórias (Data, Nº NFS-e, Valor) não encontradas');
+  }
+
+  const dadosArquivo = [];
+  for (let i = 1; i < linhas.length; i++) {
+    const linha = linhas[i].split(delimitador).map(c => c.trim().replace(/"/g, ''));
+    if (linha.length < Math.max(colunaData, colunaNumero, colunaValor) + 1) continue;
+
+    const data = linha[colunaData] || '';
+    const numero = linha[colunaNumero] || '';
+    const valor = linha[colunaValor] || '';
+    const inss = colunaINSS !== -1 ? (linha[colunaINSS] || '') : '';
+
+    let situacao = 'Normal';
+    if (linha.length > colunaSituacao) {
+      const valorSituacao = (linha[colunaSituacao] || '').toString().trim().toUpperCase();
+      if (valorSituacao === 'C') {
+        situacao = 'Cancelada';
+      } else if (valorSituacao === 'T' || valorSituacao === 'F') {
+        situacao = 'Normal';
+      }
+    }
+
+    let mesAno = '';
+    if (data) {
+      const partes = data.split(/[\/\-\.]/).map(p => p.trim());
+      if (partes.length >= 3) {
+        let mes = partes[1] ? partes[1].padStart(2,'0') : '';
+        let ano = partes[2] || partes[0];
+        if (ano && ano.length === 2) ano = '20' + ano;
+        if (mes && ano) mesAno = `${mes}/${ano}`;
+      }
+    }
+
+    if (data && numero && valor) {
+      dadosArquivo.push({ data, numero, valor, inss, situacao, mesAno, arquivo: nomeArquivo });
+    }
+  }
+
+  if (dadosArquivo.length === 0) throw new Error('Nenhum dado válido encontrado no arquivo');
+  return dadosArquivo;
+}
+
+function finalizarProcessamento(dados) {
+  dadosOriginais = dados;
+  dadosFiltrados = [...dadosOriginais];
+  atualizarTabela();
+  atualizarEstatisticas();
+
+  const meses = [...new Set(dadosOriginais.map(d => d.mesAno).filter(Boolean))].sort();
+  const selectMes = document.getElementById('mesPerdComp');
+  selectMes.innerHTML = '<option value="">Selecione o mês</option>';
+  meses.forEach(mes => { const option = document.createElement('option'); option.value = mes; option.textContent = mes; selectMes.appendChild(option); });
+
+  document.getElementById('perdcompSection').style.display = 'block';
+  document.getElementById('statsPanel').style.display = 'block';
+  document.getElementById('filtersSection').style.display = 'block';
+  document.getElementById('exportSection').style.display = 'block';
+}
+
+function adicionarPerdComp() {
+  const valorInput = document.getElementById('valorPerdComp').value;
+  const mes = document.getElementById('mesPerdComp').value;
+  const numeroRestituicao = document.getElementById('numeroPerdCompRestituicao').value.trim();
+  const compensacao = document.getElementById('perdCompCompensacao').value.trim();
+  
+  if (!mes) { mostrarMensagem('Selecione um mês', 'warning'); return; }
+  
+  const valorNum = converterMoedaParaNumero(valorInput);
+  
+  if (valorNum <= 0) { mostrarMensagem('Digite um valor válido maior que zero', 'warning'); return; }
+  
+  perdCompPorMes[mes] = {
+    valor: valorNum,
+    numeroRestituicao: numeroRestituicao,
+    compensacao: compensacao
+  };
+  
+  atualizarTabelaPerdComp();
+  atualizarEstatisticas();
+  document.getElementById('valorPerdComp').value = 'R$ 0,00';
+  document.getElementById('numeroPerdCompRestituicao').value = '';
+  document.getElementById('perdCompCompensacao').value = '';
+  mostrarMensagem(`PERD COMP de ${formatarMoeda(valorNum)} adicionado para ${mes}`);
+}
+
+function removerPerdComp(mes) {
+  if (!confirm(`Remover PERD COMP de ${mes}?`)) return;
+  delete perdCompPorMes[mes];
+  atualizarTabelaPerdComp();
+  atualizarEstatisticas();
+  mostrarMensagem(`PERD COMP de ${mes} removido`);
+}
+
+function atualizarTabelaPerdComp() {
+  const tbody = document.getElementById('tabelaPerdComp');
+  const meses = Object.keys(perdCompPorMes);
+  if (meses.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">Nenhum PERD COMP adicionado</td></tr>';
+    return;
+  }
+  tbody.innerHTML = meses.map(mes => {
+    const dados = perdCompPorMes[mes];
+    const valor = typeof dados === 'object' ? dados.valor : dados;
+    const numeroRest = typeof dados === 'object' ? (dados.numeroRestituicao || '-') : '-';
+    const compensacao = typeof dados === 'object' ? (dados.compensacao || '-') : '-';
+    
+    return `
+    <tr>
+      <td>${mes}</td>
+      <td>${formatarMoeda(valor)}</td>
+      <td>${numeroRest}</td>
+      <td>${compensacao}</td>
+      <td><button class="btn-remove" onclick="removerPerdComp('${mes}')">Remover</button></td>
+    </tr>
+  `;
+  }).join('');
+}
+
+function atualizarTabela() {
+  const tbody = document.getElementById('tabelaBody');
+  if (dadosFiltrados.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;">Nenhum dado encontrado</td></tr>';
+    return;
+  }
+  tbody.innerHTML = dadosFiltrados.map(item => {
+    const cls = 'situacao-' + slugSituacao(item.situacao);
+    const emoji = item.situacao === 'Normal' ? '✅' : '❌';
+    return `
+      <tr>
+        <td>${item.data}</td>
+        <td><strong>${item.numero}</strong></td>
+        <td>${item.valor}</td>
+        <td>${item.inss}</td>
+        <td class="${cls}">${emoji} ${item.situacao}</td>
+        <td style="font-size: 0.9em; color: #666;">${item.arquivo}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function atualizarEstatisticas() {
+  const notasNormais = dadosFiltrados.filter(item => item.situacao === 'Normal');
+  const notasCanceladas = dadosFiltrados.filter(item => item.situacao === 'Cancelada');
+
+  let totalINSS = 0;
+  notasNormais.forEach(item => {
+    const valorINSS = converterMoedaParaNumero(item.inss);
+    totalINSS += valorINSS;
+  });
+
+  let totalPerdComp = 0;
+  const mesesPresentes = [...new Set(notasNormais.map(item => item.mesAno).filter(Boolean))];
+  mesesPresentes.forEach(mes => {
+    if (perdCompPorMes[mes]) {
+      const valor = typeof perdCompPorMes[mes] === 'object' ? perdCompPorMes[mes].valor : perdCompPorMes[mes];
+      totalPerdComp += valor;
+    }
+  });
+
+  const totalFinal = Math.max(0, totalINSS - totalPerdComp);
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Arquivos Carregados</div><div class="stat-value">${arquivosCarregados.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Total de Notas</div><div class="stat-value">${dadosFiltrados.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Normais</div><div class="stat-value" style="color: #10b981;">${notasNormais.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Canceladas</div><div class="stat-value" style="color: #ef4444;">${notasCanceladas.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Total INSS (Normais)</div><div class="stat-value">${formatarMoeda(totalINSS)}</div></div>
+    <div class="stat-card"><div class="stat-label">PERD COMP</div><div class="stat-value">${formatarMoeda(totalPerdComp)}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Final</div><div class="stat-value">${formatarMoeda(totalFinal)}</div></div>
+  `;
+}
+
+function filtrarDados() {
+  const mes = document.getElementById('filtroMes').value.trim();
+  const numero = document.getElementById('filtroNumero').value.trim().toLowerCase();
+  const situacao = document.getElementById('filtroSituacao').value;
+
+  dadosFiltrados = dadosOriginais.filter(item => {
+    const matchMes = !mes || (item.mesAno && item.mesAno.includes(mes));
+    const matchNumero = !numero || (item.numero && item.numero.toString().toLowerCase().includes(numero));
+    const matchSituacao = !situacao || (item.situacao && item.situacao.trim() === situacao);
+    return matchMes && matchNumero && matchSituacao;
+  });
+
+  atualizarTabela();
+  atualizarEstatisticas();
+  mostrarMensagem(`Filtros aplicados: ${dadosFiltrados.length} registros encontrados`);
+}
+
+function limparFiltros() {
+  document.getElementById('filtroMes').value = '';
+  document.getElementById('filtroNumero').value = '';
+  document.getElementById('filtroSituacao').value = '';
+  dadosFiltrados = [...dadosOriginais];
+  atualizarTabela();
+  atualizarEstatisticas();
+  mostrarMensagem('Filtros limpos');
+}
+
+function limparTudo() {
+  if (arquivosCarregados.length > 0 && !confirm('Tem certeza que deseja limpar todos os dados?')) return;
+  document.getElementById('arquivoCSV').value = '';
+  document.getElementById('btnLimpar').style.display = 'none';
+  dadosOriginais = []; dadosFiltrados = []; perdCompPorMes = {}; arquivosCarregados = [];
+  document.getElementById('fileNames').innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">Nenhum arquivo selecionado</div>';
+  document.getElementById('perdcompSection').style.display = 'none';
+  document.getElementById('statsPanel').style.display = 'none';
+  document.getElementById('filtersSection').style.display = 'none';
+  document.getElementById('exportSection').style.display = 'none';
+  atualizarTabela(); atualizarTabelaPerdComp();
+  mostrarMensagem('Todos os dados foram limpos');
+}
+
+function exportarCSV() {
+  if (dadosFiltrados.length === 0) { mostrarMensagem('Nenhum dado para exportar', 'warning'); return; }
+  let csv = 'Data;Nº NFS-e;Valor;INSS;Situação;Arquivo\n';
+  dadosFiltrados.forEach(item => { csv += `${item.data};${item.numero};${item.valor};${item.inss};${item.situacao};${item.arquivo}\n`; });
+
+  if (Object.keys(perdCompPorMes).length > 0) {
+    csv += '\nPERD COMP por Mês\nMês;Valor;Nº Restituição;Compensação\n';
+    Object.keys(perdCompPorMes).forEach(mes => {
+      const dados = perdCompPorMes[mes];
+      const valor = typeof dados === 'object' ? dados.valor : dados;
+      const numeroRest = typeof dados === 'object' ? (dados.numeroRestituicao || '') : '';
+      const compensacao = typeof dados === 'object' ? (dados.compensacao || '') : '';
+      csv += `${mes};${formatarMoeda(valor)};${numeroRest};${compensacao}\n`;
+    });
+  }
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'notas_fiscais_consolidado.csv';
+  link.click();
+  mostrarMensagem('CSV exportado com sucesso');
+}
+
+function exportarExcel() {
+  if (dadosFiltrados.length === 0) { mostrarMensagem('Nenhum dado para exportar', 'warning'); return; }
+
+  const ws_data = [];
+  ws_data.push(['Data','Nº NFS-e','Valor','INSS','Situação','Arquivo']);
+  dadosFiltrados.forEach(item => {
+    ws_data.push([item.data, item.numero, item.valor, item.inss, item.situacao, item.arquivo]);
+  });
+
+  if (Object.keys(perdCompPorMes).length > 0) {
+    ws_data.push([]);
+    ws_data.push(['PERD COMP por Mês']);
+    ws_data.push(['Mês','Valor','Nº Restituição','Compensação']);
+    Object.keys(perdCompPorMes).forEach(mes => {
+      const dados = perdCompPorMes[mes];
+      const valor = typeof dados === 'object' ? dados.valor : dados;
+      const numeroRest = typeof dados === 'object' ? (dados.numeroRestituicao || '') : '';
+      const compensacao = typeof dados === 'object' ? (dados.compensacao || '') : '';
+      ws_data.push([mes, formatarMoeda(valor), numeroRest, compensacao]);
+    });
+  }
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+  XLSX.utils.book_append_sheet(wb, ws, 'Notas');
+  const wbout = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+  const blob = new Blob([wbout], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'notas_fiscais_consolidado.xlsx';
+  a.click();
+  URL.revokeObjectURL(url);
+  mostrarMensagem('Excel (.xlsx) exportado com sucesso');
+}
+
+document.getElementById('valorPerdComp').addEventListener('input', function(e) {
+  let value = e.target.value.replace(/\D/g, '');
+  if (value === '') {
+    e.target.value = 'R$ 0,00';
+    return;
+  }
+  const num = parseFloat(value) / 100;
+  e.target.value = 'R$ ' + num.toLocaleString('pt-BR', { 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  });
+});
+
+document.getElementById('filtroMes').addEventListener('input', function(e) {
+  let value = e.target.value.replace(/\D/g, '');
+  if (value.length > 2) value = value.substring(0,2) + '/' + value.substring(2,6);
+  e.target.value = value;
+});
+</script>
+
+</body>
+</html>

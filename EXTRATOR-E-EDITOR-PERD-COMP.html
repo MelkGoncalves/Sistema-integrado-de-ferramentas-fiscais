@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Extrator de Informações PER/DCOMP</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --primary: #667eea;
+      --primary-dark: #5a6fd8;
+      --secondary: #764ba2;
+      --success: #28a745;
+      --danger: #dc3545;
+      --warning: #ffc107;
+      --info: #17a2b8;
+      --light: #f8f9fa;
+      --dark: #343a40;
+      --gray: #6c757d;
+      --border-radius: 12px;
+      --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: var(--dark);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+      font-size: 2.2em;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      margin-bottom: 30px;
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .card h2 {
+      color: var(--dark);
+      margin-bottom: 20px;
+      font-size: 1.4em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e9ecef;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 600;
+      color: var(--gray);
+      transition: var(--transition);
+      border-radius: var(--border-radius) var(--border-radius) 0 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tab:hover {
+      color: var(--primary);
+      background: rgba(102, 126, 234, 0.05);
+    }
+
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      width: 100%;
+      margin-bottom: 15px;
+    }
+
+    .file-input-wrapper input[type="file"] {
+      position: absolute;
+      left: -9999px;
+    }
+
+    .file-input-label {
+      display: block;
+      padding: 25px;
+      background: var(--light);
+      border: 2px dashed var(--primary);
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .file-input-label:hover {
+      background: #e9ecef;
+      border-color: var(--secondary);
+      transform: translateY(-2px);
+    }
+
+    .file-input-label.has-file {
+      border-style: solid;
+      background: #e7f3ff;
+      border-color: #0066cc;
+    }
+
+    .files-list {
+      margin-top: 15px;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .file-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background: var(--light);
+      border-radius: 6px;
+      margin-bottom: 8px;
+      transition: var(--transition);
+    }
+
+    .file-item:hover {
+      background: #e9ecef;
+    }
+
+    .file-item-name {
+      flex: 1;
+      color: var(--dark);
+      font-size: 0.9em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .file-item-remove {
+      background: var(--danger);
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8em;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .file-item-remove:hover {
+      background: #c82333;
+      transform: scale(1.05);
+    }
+
+    /* Botões aprimorados */
+    .btn {
+      padding: 15px 25px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.1em;
+      font-weight: 600;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn:hover::before {
+      left: 100%;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--gray) 0%, #5a6268 100%);
+      color: white;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success) 0%, #20c997 100%);
+      color: white;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning) 0%, #fd7e14 100%);
+      color: var(--dark);
+    }
+
+    .btn-warning:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger) 0%, #e4606d 100%);
+      color: white;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .btn:disabled::before {
+      display: none;
+    }
+
+    .results {
+      background: white;
+      padding: 30px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      animation: fadeIn 0.5s ease;
+    }
+
+    .results h2 {
+      color: var(--dark);
+      margin-bottom: 25px;
+      font-size: 1.4em;
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .editable-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    .editable-table th {
+      background: var(--primary);
+      color: white;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+
+    .editable-table td {
+      padding: 10px 12px;
+      border: 1px solid #dee2e6;
+    }
+
+    .editable-table tr:nth-child(even) {
+      background: var(--light);
+    }
+
+    .editable-table tr:hover {
+      background: #e9ecef;
+    }
+
+    .editable-table input {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 0.9em;
+      transition: var(--transition);
+    }
+
+    .editable-table input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .table-container {
+      max-height: 600px;
+      overflow-y: auto;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+    }
+
+    .pdf-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: var(--light);
+      border-radius: 8px;
+      border-left: 5px solid var(--primary);
+      transition: var(--transition);
+    }
+
+    .pdf-section:hover {
+      transform: translateX(5px);
+    }
+
+    .pdf-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #dee2e6;
+    }
+
+    .pdf-section-title {
+      font-size: 1.1em;
+      font-weight: 600;
+      color: var(--dark);
+    }
+
+    .pdf-section-number {
+      background: var(--primary);
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.9em;
+      font-weight: 600;
+    }
+
+    .field {
+      margin-bottom: 12px;
+      padding: 12px;
+      background: white;
+      border-left: 3px solid var(--primary);
+      border-radius: 6px;
+      transition: var(--transition);
+    }
+
+    .field:hover {
+      background: var(--light);
+      transform: translateX(5px);
+    }
+
+    .field label {
+      font-weight: 600;
+      color: var(--dark);
+      display: block;
+      margin-bottom: 5px;
+      font-size: 0.85em;
+    }
+
+    .field-value {
+      color: var(--primary);
+      font-size: 1em;
+      font-weight: 500;
+      word-break: break-word;
+    }
+
+    .field-value.not-found {
+      color: var(--danger);
+      font-style: italic;
+    }
+
+    .alert {
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      border-left: 4px solid;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .alert-error {
+      background: #f8d7da;
+      color: #721c24;
+      border-left-color: var(--danger);
+    }
+
+    .alert-success {
+      background: #d4edda;
+      color: #155724;
+      border-left-color: var(--success);
+    }
+
+    .alert-info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border-left-color: var(--info);
+    }
+
+    .alert-warning {
+      background: #fff3cd;
+      color: #856404;
+      border-left-color: var(--warning);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 30px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 30px;
+      background: #e9ecef;
+      border-radius: 15px;
+      overflow: hidden;
+      margin-bottom: 15px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      transition: width 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 0.9em;
+    }
+
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .actions button {
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      flex: 1;
+      min-width: 150px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      transition: var(--transition);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .stat-number {
+      font-size: 2em;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 0.9em;
+      opacity: 0.9;
+    }
+
+    .info-box {
+      background: #e7f3ff;
+      border-left: 4px solid #0066cc;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    .info-box h3 {
+      color: #0066cc;
+      margin-bottom: 10px;
+      font-size: 1em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-box ul {
+      margin-left: 20px;
+      color: var(--dark);
+    }
+
+    .info-box li {
+      margin-bottom: 5px;
+    }
+
+    .view-toggle {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+      gap: 10px;
+    }
+
+    .view-toggle button {
+      padding: 10px 20px;
+      border: 2px solid var(--primary);
+      background: white;
+      color: var(--primary);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: var(--transition);
+      font-weight: 600;
+    }
+
+    .view-toggle button.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .view-toggle button:hover:not(.active) {
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--gray);
+    }
+
+    .empty-state i {
+      font-size: 3em;
+      margin-bottom: 15px;
+      opacity: 0.5;
+    }
+
+    .empty-state p {
+      font-size: 1.1em;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.5em;
+      }
+
+      .card {
+        padding: 20px;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .actions button {
+        min-width: 100%;
+      }
+
+      .stats {
+        flex-direction: column;
+      }
+
+      .tabs {
+        flex-direction: column;
+      }
+
+      .table-container {
+        max-height: 400px;
+      }
+
+      .pdf-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div style="position: fixed; top: 20px; left: 20px; z-index: 1000;">
+      <a href="index.html" style="display: inline-block; background: #667eea; color: white; padding: 12px 20px; border-radius: 25px; text-decoration:   none; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s ease; border: 2px solid white;">
+        🏠 Voltar ao Início
+    </a>
+  </div>
+
+
+  <div class="container">
+    <h1>
+      <span>📄</span>
+      Extrator e Editor de Informações PER/DCOMP
+    </h1>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('extract')">
+          <span>📥</span>
+          Extrair de PDFs
+        </button>
+        <button class="tab" onclick="switchTab('edit')">
+          <span>✏️</span>
+          Editar Planilha
+        </button>
+      </div>
+
+      <div id="extractTab" class="tab-content active">
+        <h2><span>📄</span> Upload de PDFs (Múltiplos Arquivos)</h2>
+        
+        <div class="info-box">
+          <h3><span>ℹ️</span> Como usar:</h3>
+          <ul>
+            <li>Selecione um ou mais arquivos PDF de PER/DCOMP</li>
+            <li>O sistema extrairá automaticamente as informações relevantes</li>
+            <li>Revise os dados extraídos e exporte no formato desejado</li>
+          </ul>
+        </div>
+        
+        <div class="file-input-wrapper">
+          <input type="file" id="pdfUpload" accept=".pdf" multiple />
+          <label for="pdfUpload" class="file-input-label" id="fileLabel">
+            <span>📁 Clique aqui ou arraste múltiplos arquivos PDF</span>
+          </label>
+        </div>
+        <div class="files-list" id="filesList"></div>
+        <button onclick="processPDFs()" id="processBtn" class="btn btn-primary">
+          <span>🔍</span>
+          Extrair Informações de Todos os Arquivos
+        </button>
+      </div>
+
+      <div id="editTab" class="tab-content">
+        <h2><span>📊</span> Upload de Planilha Excel para Edição</h2>
+        <div class="info-box">
+          <h3><span>ℹ️</span> Como usar:</h3>
+          <ul>
+            <li>Primeiro, extraia os dados dos PDFs e exporte para Excel</li>
+            <li>Faça upload da planilha gerada para editá-la aqui</li>
+            <li>Edite os valores diretamente na tabela</li>
+            <li>Exporte novamente com as alterações</li>
+          </ul>
+        </div>
+        <div class="file-input-wrapper">
+          <input type="file" id="excelUpload" accept=".xlsx,.xls" />
+          <label for="excelUpload" class="file-input-label" id="excelLabel">
+            <span>📊 Clique aqui para fazer upload da planilha Excel</span>
+          </label>
+        </div>
+        <button onclick="loadExcel()" id="loadExcelBtn" class="btn btn-primary" style="display: none">
+          <span>📝</span>
+          Carregar Planilha para Edição
+        </button>
+      </div>
+    </div>
+
+    <div id="results" class="results" style="display: none">
+      <h2 id="resultsTitle">
+        <span>📋</span>
+        Informações Extraídas
+      </h2>
+      
+      <div class="stats" id="statsSection"></div>
+      
+      <div class="view-toggle" id="viewToggle" style="display: none">
+        <button onclick="switchView('cards')" id="cardsViewBtn" class="active">
+          <span>🃏</span> Visualização em Cartões
+        </button>
+        <button onclick="switchView('table')" id="tableViewBtn">
+          <span>📊</span> Visualização em Tabela
+        </button>
+      </div>
+
+      <div id="cardsView">
+        <div id="extractedData"></div>
+      </div>
+
+      <div id="tableView" style="display: none">
+        <div class="table-container">
+          <table class="editable-table" id="editableTable"></table>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button onclick="exportToPDF()" class="btn btn-danger" id="pdfBtn">
+          <span>📄</span> Exportar PDF
+        </button>
+        <button onclick="exportToExcel()" class="btn btn-success" id="exportBtn">
+          <span>📊</span> Exportar Excel
+        </button>
+        <button onclick="exportToCSV()" class="btn btn-secondary" id="csvBtn">
+          <span>💾</span> Exportar CSV
+        </button>
+        <button onclick="copyToClipboard()" class="btn btn-warning" id="copyBtn">
+          <span>📋</span> Copiar Dados
+        </button>
+        <button onclick="reset()" class="btn btn-secondary">
+          <span>🔄</span> Novo Upload
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+    let allExtractedData = [];
+    let selectedFiles = [];
+    let currentMode = "extract";
+    let editableData = [];
+    let currentView = "cards";
+
+    const fileInput = document.getElementById("pdfUpload");
+    const excelInput = document.getElementById("excelUpload");
+    const fileLabel = document.getElementById("fileLabel");
+    const excelLabel = document.getElementById("excelLabel");
+    const filesList = document.getElementById("filesList");
+    const processBtn = document.getElementById("processBtn");
+    const loadExcelBtn = document.getElementById("loadExcelBtn");
+    const viewToggle = document.getElementById("viewToggle");
+    const cardsViewBtn = document.getElementById("cardsViewBtn");
+    const tableViewBtn = document.getElementById("tableViewBtn");
+
+    function switchTab(tab) {
+      document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach((c) => c.classList.remove("active"));
+
+      if (tab === "extract") {
+        document.querySelectorAll(".tab")[0].classList.add("active");
+        document.getElementById("extractTab").classList.add("active");
+        currentMode = "extract";
+      } else {
+        document.querySelectorAll(".tab")[1].classList.add("active");
+        document.getElementById("editTab").classList.add("active");
+        currentMode = "edit";
+      }
+    }
+
+    function switchView(view) {
+      currentView = view;
+      
+      if (view === "cards") {
+        document.getElementById("cardsView").style.display = "block";
+        document.getElementById("tableView").style.display = "none";
+        cardsViewBtn.classList.add("active");
+        tableViewBtn.classList.remove("active");
+      } else {
+        document.getElementById("cardsView").style.display = "none";
+        document.getElementById("tableView").style.display = "block";
+        cardsViewBtn.classList.remove("active");
+        tableViewBtn.classList.add("active");
+        
+        if (currentMode === "extract") {
+          displayExtractedDataAsTable();
+        }
+      }
+    }
+
+    fileInput.addEventListener("change", (e) => {
+      addFiles(Array.from(e.target.files));
+    });
+
+    fileLabel.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      fileLabel.style.borderColor = "#764ba2";
+      fileLabel.style.transform = "scale(1.02)";
+    });
+
+    fileLabel.addEventListener("dragleave", () => {
+      fileLabel.style.borderColor = "#667eea";
+      fileLabel.style.transform = "scale(1)";
+    });
+
+    fileLabel.addEventListener("drop", (e) => {
+      e.preventDefault();
+      fileLabel.style.borderColor = "#667eea";
+      fileLabel.style.transform = "scale(1)";
+      if (e.dataTransfer.files.length > 0) {
+        addFiles(Array.from(e.dataTransfer.files));
+      }
+    });
+
+    excelInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) {
+        excelLabel.classList.add("has-file");
+        excelLabel.innerHTML = `<span>📊 ${e.target.files[0].name}</span>`;
+        loadExcelBtn.style.display = "block";
+      }
+    });
+
+    function addFiles(files) {
+      const pdfFiles = files.filter(
+        (f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")
+      );
+
+      pdfFiles.forEach((file) => {
+        if (!selectedFiles.find((f) => f.name === file.name && f.size === file.size)) {
+          selectedFiles.push(file);
+        }
+      });
+
+      updateFilesList();
+
+      if (pdfFiles.length < files.length) {
+        showAlert("Apenas arquivos PDF foram adicionados.", "warning");
+      }
+    }
+
+    function updateFilesList() {
+      if (selectedFiles.length === 0) {
+        filesList.innerHTML = '<div class="empty-state"><span>📄</span><p>Nenhum arquivo selecionado</p></div>';
+        fileLabel.classList.remove("has-file");
+        return;
+      }
+
+      fileLabel.classList.add("has-file");
+      let html = '<div style="margin-bottom: 10px; font-weight: 600; color: #495057;">Arquivos Selecionados:</div>';
+
+      selectedFiles.forEach((file, index) => {
+        html += `
+          <div class="file-item">
+            <span class="file-item-name">📄 ${file.name} (${formatFileSize(file.size)})</span>
+            <button class="file-item-remove" onclick="removeFile(${index})">
+              <span>✕</span> Remover
+            </button>
+          </div>
+        `;
+      });
+
+      filesList.innerHTML = html;
+    }
+
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      updateFilesList();
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    }
+
+    function extractPattern(text, regex) {
+      const match = text.match(regex);
+      return match ? match[1].trim() : null;
+    }
+
+    function extractFields(text) {
+      const fields = {
+        CNPJ: extractPattern(text, /CNPJ[:\s]+(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/i),
+        "Número do PER/DCOMP": extractPattern(text, /(\d{5}\.\d{5}\.\d{6}\.\d\.\d\.\d{2}-\d{4})/),
+        "Nº do PER/DCOMP Inicial": extractPattern(text, /N[ºo]?\s*do\s*PER\/DCOMP\s*Inicial[:\s]*([\d\.\-\s]{20,60})/i),
+        Competência: extractPattern(text, /Compet[êe]ncia[:\s]+([^\s]+)/i),
+        "Selic Acumulada": extractPattern(text, /Selic Acumulada[:\s]+([\d,%]+)/i),
+        "Crédito Passível de Restituição Apurado no Documento Inicial": extractPattern(text, /Cr[ée]dito Pass[ií]vel de Restitui[çc][ãa]o Apurado no Documento Inicial[:\s]+([\d,.]+)/i),
+        "Crédito Original na Data da Entrega": (function () {
+          let match = text.match(/Cr[ée]dito\s*Original\s*na\s*Data\s*da\s*Entrega[\s:–-]*([\d.,]+)/i);
+          if (!match) {
+            match = text.match(/([\d]{1,3}(?:\.\d{3})*,\d{2})\s*Cr[ée]dito\s*Original\s*na\s*Data\s*da\s*Entrega/i);
+          }
+          return match ? match[1].trim() : null;
+        })(),
+        "Crédito Atualizado": extractPattern(text, /Cr[ée]dito Atualizado[:\s]+([\d,.]+)/i),
+        "Saldo do Crédito Original": extractPattern(text, /Saldo do Cr[ée]dito Original[:\s]+([\d,.]+)/i),
+        "Período de Apuração": extractPattern(text, /Per[ií]odo de Apura[çc][ãa]o[:\s]+([^\s]+)/i),
+        "Data de Vencimento": extractPattern(text, /Data de Vencimento.*?[:\s]+([\d\/]+)/i),
+        "Recibo DCTFWeb": extractPattern(text, /Recibo.*?DCTFWeb[:\s]+([\d]+)/i),
+        Multa: extractPattern(text, /Multa[:\s]+([\d,.]+)/i),
+        Juros: extractPattern(text, /Juros[:\s]+([\d,.]+)/i),
+        "Total dos Débitos deste Documento": extractPattern(text, /Total dos D[ée]bitos deste Documento[:\s]+([\d,.]+)/i),
+      };
+
+      return fields;
+    }
+
+    async function processPDFs() {
+      if (selectedFiles.length === 0) {
+        showAlert("Por favor, selecione pelo menos um arquivo PDF.", "warning");
+        return;
+      }
+
+      currentMode = "extract";
+      const resultsDiv = document.getElementById("results");
+      const extractedDiv = document.getElementById("extractedData");
+
+      document.getElementById("resultsTitle").textContent = "Informações Extraídas";
+      viewToggle.style.display = "flex";
+
+      extractedDiv.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Processando ${selectedFiles.length} arquivo(s)...</p>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+          </div>
+        </div>
+      `;
+      resultsDiv.style.display = "block";
+      processBtn.disabled = true;
+      allExtractedData = [];
+
+      try {
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i];
+          const progress = Math.round(((i + 1) / selectedFiles.length) * 100);
+
+          const progressFill = document.getElementById("progressFill");
+          if (progressFill) {
+            progressFill.style.width = progress + "%";
+            progressFill.textContent = progress + "%";
+          }
+
+          try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            let fullText = "";
+
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+              const page = await pdf.getPage(pageNum);
+              const textContent = await page.getTextContent();
+              const pageText = textContent.items.map((item) => item.str).join(" ");
+              fullText += pageText + "\n";
+            }
+
+            fullText = fullText.replace(/\s+/g, " ").trim();
+            const extractedFields = extractFields(fullText);
+
+            allExtractedData.push({
+              fileName: file.name,
+              data: extractedFields,
+              success: true,
+            });
+          } catch (error) {
+            allExtractedData.push({
+              fileName: file.name,
+              data: null,
+              success: false,
+              error: error.message,
+            });
+          }
+        }
+
+        displayAllResults();
+        showAlert(`Processamento concluído! ${allExtractedData.filter(d => d.success).length} de ${allExtractedData.length} arquivos processados com sucesso.`, "success");
+      } catch (error) {
+        showAlert(`Erro geral ao processar PDFs: ${error.message}`, "error");
+      } finally {
+        processBtn.disabled = false;
+      }
+    }
+
+    async function loadExcel() {
+      const file = excelInput.files[0];
+      if (!file) {
+        showAlert("Por favor, selecione um arquivo Excel.", "warning");
+        return;
+      }
+
+      currentMode = "edit";
+      const resultsDiv = document.getElementById("results");
+      document.getElementById("resultsTitle").textContent = "Editar Planilha";
+      document.getElementById("statsSection").innerHTML = "";
+      viewToggle.style.display = "none";
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+
+        editableData = [];
+
+        const validSheets = workbook.SheetNames.filter((sheetName) => {
+          const normalized = sheetName.toLowerCase().trim();
+          return !(
+            normalized === "resumo" ||
+            normalized === "📊 resumo" ||
+            normalized === "dados consolidados" ||
+            normalized.startsWith("resumo") ||
+            normalized.includes("consolidado")
+          );
+        });
+
+        validSheets.forEach((sheetName) => {
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          const dataStartIndex = jsonData.findIndex(
+            (row) => row[0] === "Campo" && row[1] === "Valor"
+          );
+
+          if (dataStartIndex !== -1 && jsonData.length > dataStartIndex + 1) {
+            const record = {
+              sheetName: sheetName,
+              data: {},
+            };
+
+            const dataRows = jsonData.slice(dataStartIndex + 1);
+
+            dataRows.forEach((row) => {
+              if (row[0] && row[0].toString().trim() !== "") {
+                record.data[row[0]] = row[1] || "";
+              }
+            });
+
+            if (Object.keys(record.data).length > 0) {
+              editableData.push(record);
+            }
+          }
+        });
+
+        if (editableData.length === 0) {
+          showAlert("Nenhum dado válido encontrado. Certifique-se de que está usando uma planilha exportada por este sistema.", "warning");
+          return;
+        }
+
+        displayEditableTable();
+        resultsDiv.style.display = "block";
+        document.getElementById("cardsView").style.display = "none";
+        document.getElementById("tableView").style.display = "block";
+        currentView = "table";
+
+        showAlert(`Planilha carregada com sucesso! ${editableData.length} arquivo(s) encontrado(s).`, "success");
+      } catch (error) {
+        showAlert("Erro ao carregar planilha: " + error.message, "error");
+      }
+    }
+
+    function displayEditableTable() {
+      const table = document.getElementById("editableTable");
+
+      if (editableData.length === 0) {
+        table.innerHTML = "<tr><td>Nenhum dado encontrado na planilha.</td></tr>";
+        return;
+      }
+
+      let html = "<thead><tr><th>Campo</th>";
+      editableData.forEach((item, index) => {
+        html += `<th>${item.sheetName || "Arquivo " + (index + 1)}</th>`;
+      });
+      html += "</tr></thead><tbody>";
+
+      const allFields = new Set();
+      editableData.forEach((item) => {
+        Object.keys(item.data).forEach((key) => allFields.add(key));
+      });
+
+      Array.from(allFields).forEach((field) => {
+        html += `<tr><td><strong>${field}</strong></td>`;
+        editableData.forEach((item, index) => {
+          const value = item.data[field] || "";
+          html += `<td><input type="text" value="${value}" onchange="updateCell(${index}, '${field.replace(/'/g, "\\'")}', this.value)"></td>`;
+        });
+        html += "</tr>";
+      });
+
+      html += "</tbody>";
+      table.innerHTML = html;
+    }
+
+    function displayExtractedDataAsTable() {
+      const table = document.getElementById("editableTable");
+
+      if (allExtractedData.length === 0) {
+        table.innerHTML = "<tr><td>Nenhum dado extraído.</td></tr>";
+        return;
+      }
+
+      let html = "<thead><tr><th>Campo</th>";
+      allExtractedData.forEach((item, index) => {
+        html += `<th>${item.fileName}</th>`;
+      });
+      html += "</tr></thead><tbody>";
+
+      const allFields = new Set();
+      allExtractedData.forEach((item) => {
+        if (item.success) {
+          Object.keys(item.data).forEach((key) => allFields.add(key));
+        }
+      });
+
+      Array.from(allFields).forEach((field) => {
+        html += `<tr><td><strong>${field}</strong></td>`;
+        allExtractedData.forEach((item) => {
+          if (item.success) {
+            const value = item.data[field] || "Não encontrado";
+            const valueClass = item.data[field] ? "" : "not-found";
+            html += `<td class="${valueClass}">${value}</td>`;
+          } else {
+            html += `<td class="not-found">Erro</td>`;
+          }
+        });
+        html += "</tr>";
+      });
+
+      html += "</tbody>";
+      table.innerHTML = html;
+    }
+
+    function updateCell(recordIndex, field, value) {
+      editableData[recordIndex].data[field] = value;
+    }
+
+    function displayAllResults() {
+      const extractedDiv = document.getElementById("extractedData");
+      const statsSection = document.getElementById("statsSection");
+
+      const successCount = allExtractedData.filter((d) => d.success).length;
+      const errorCount = allExtractedData.filter((d) => !d.success).length;
+
+      statsSection.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-number">${allExtractedData.length}</div>
+          <div class="stat-label">Total de Arquivos</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, var(--success) 0%, #20c997 100%);">
+          <div class="stat-number">${successCount}</div>
+          <div class="stat-label">Processados com Sucesso</div>
+        </div>
+        ${errorCount > 0 ? `
+        <div class="stat-card" style="background: linear-gradient(135deg, var(--danger) 0%, #fd7e14 100%);">
+          <div class="stat-number">${errorCount}</div>
+          <div class="stat-label">Com Erros</div>
+        </div>
+        ` : ""}
+      `;
+
+      if (allExtractedData.length === 0) {
+        extractedDiv.innerHTML = '<div class="empty-state"><span>📄</span><p>Nenhum dado extraído</p></div>';
+        return;
+      }
+
+      let html = "";
+
+      allExtractedData.forEach((item, index) => {
+        html += `<div class="pdf-section">`;
+        html += `
+          <div class="pdf-section-header">
+            <div class="pdf-section-title">📄 ${item.fileName}</div>
+            <div class="pdf-section-number">Arquivo ${index + 1}</div>
+          </div>
+        `;
+
+        if (item.success) {
+          for (const [key, value] of Object.entries(item.data)) {
+            const displayValue = value || "Não encontrado";
+            const valueClass = value ? "field-value" : "field-value not-found";
+
+            html += `
+              <div class="field">
+                <label>${key}:</label>
+                <div class="${valueClass}">${displayValue}</div>
+              </div>
+            `;
+          }
+        } else {
+          html += `<div class="alert alert-error">❌ Erro ao processar: ${item.error}</div>`;
+        }
+
+        html += `</div>`;
+      });
+
+      extractedDiv.innerHTML = html;
+    }
+
+    function copyToClipboard() {
+      let text = "";
+
+      if (currentMode === "extract") {
+        text = "=== EXTRAÇÃO DE INFORMAÇÕES PER/DCOMP ===\n\n";
+
+        allExtractedData.forEach((item, index) => {
+          text += `\n[${"=".repeat(60)}]\n`;
+          text += `ARQUIVO ${index + 1}: ${item.fileName}\n`;
+          text += `[${"=".repeat(60)}]\n\n`;
+
+          if (item.success) {
+            for (const [key, value] of Object.entries(item.data)) {
+              text += `${key}: ${value || "Não encontrado"}\n`;
+            }
+          } else {
+            text += `ERRO: ${item.error}\n`;
+          }
+          text += "\n";
+        });
+      } else {
+        text = "=== DADOS EDITADOS ===\n\n";
+
+        editableData.forEach((item, index) => {
+          text += `\n[${"=".repeat(60)}]\n`;
+          text += `${item.sheetName || "Arquivo " + (index + 1)}\n`;
+          text += `[${"=".repeat(60)}]\n\n`;
+
+          for (const [key, value] of Object.entries(item.data)) {
+            text += `${key}: ${value}\n`;
+          }
+          text += "\n";
+        });
+      }
+
+      navigator.clipboard.writeText(text).then(() => {
+        showAlert("Todos os dados copiados para a área de transferência!", "success");
+      }).catch((err) => {
+        showAlert("Erro ao copiar: " + err, "error");
+      });
+    }
+
+    function exportToExcel() {
+      const wb = XLSX.utils.book_new();
+
+      if (currentMode === "extract") {
+        const consolidatedData = [["EXTRAÇÃO DE INFORMAÇÕES PER/DCOMP"]];
+        consolidatedData.push(["Data de Extração: " + new Date().toLocaleDateString("pt-BR")]);
+        consolidatedData.push([]);
+
+        const headers = ["Arquivo"];
+        if (allExtractedData.length > 0 && allExtractedData[0].success) {
+          headers.push(...Object.keys(allExtractedData[0].data));
+        }
+        consolidatedData.push(headers);
+
+        allExtractedData.forEach((item) => {
+          const row = [item.fileName];
+          if (item.success) {
+            Object.values(item.data).forEach((value) => {
+              row.push(value || "Não encontrado");
+            });
+          } else {
+            row.push("ERRO: " + item.error);
+          }
+          consolidatedData.push(row);
+        });
+
+        const wsConsolidated = XLSX.utils.aoa_to_sheet(consolidatedData);
+
+        const range = XLSX.utils.decode_range(wsConsolidated["!ref"]);
+
+        wsConsolidated["!cols"] = [{ wch: 35 }];
+        for (let i = 1; i <= headers.length - 1; i++) {
+          wsConsolidated["!cols"].push({ wch: 25 });
+        }
+
+        wsConsolidated["!merges"] = [
+          { s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } },
+          { s: { r: 1, c: 0 }, e: { r: 1, c: headers.length - 1 } },
+        ];
+
+        wsConsolidated["!freeze"] = { xSplit: 1, ySplit: 4 };
+
+        XLSX.utils.book_append_sheet(wb, wsConsolidated, "Dados Consolidados");
+
+        allExtractedData.forEach((item, index) => {
+          const sheetData = [
+            ["INFORMAÇÕES PER/DCOMP"],
+            ["Arquivo: " + item.fileName],
+            ["Data: " + new Date().toLocaleDateString("pt-BR")],
+            [],
+            ["Campo", "Valor"],
+          ];
+
+          if (item.success) {
+            for (const [key, value] of Object.entries(item.data)) {
+              sheetData.push([key, value || "Não encontrado"]);
+            }
+          } else {
+            sheetData.push(["ERRO", item.error]);
+          }
+
+          const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+          ws["!cols"] = [{ wch: 55 }, { wch: 45 }];
+          ws["!merges"] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } },
+            { s: { r: 2, c: 0 }, e: { r: 2, c: 1 } },
+          ];
+
+          let sheetName = `PDF ${index + 1}`;
+          if (item.fileName.length <= 25) {
+            sheetName = item.fileName.replace(/\.pdf$/i, "").substring(0, 31);
+          }
+
+          XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        });
+
+        const summaryData = [
+          ["RESUMO DA EXTRAÇÃO"],
+          ["Data: " + new Date().toLocaleDateString("pt-BR")],
+          ["Total de Arquivos: " + allExtractedData.length],
+          [],
+          ["Arquivo", "Status", "Competência", "CNPJ", "Número PER/DCOMP"],
+        ];
+
+        allExtractedData.forEach((item) => {
+          summaryData.push([
+            item.fileName,
+            item.success ? "✓ Sucesso" : "✗ Erro",
+            item.success ? item.data["Competência"] || "-" : "-",
+            item.success ? item.data["CNPJ"] || "-" : "-",
+            item.success ? item.data["Número do PER/DCOMP"] || "-" : "-",
+          ]);
+        });
+
+        const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+        summaryWs["!cols"] = [
+          { wch: 40 },
+          { wch: 12 },
+          { wch: 15 },
+          { wch: 20 },
+          { wch: 30 },
+        ];
+        summaryWs["!merges"] = [
+          { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } },
+          { s: { r: 1, c: 0 }, e: { r: 1, c: 4 } },
+          { s: { r: 2, c: 0 }, e: { r: 2, c: 4 } },
+        ];
+
+        XLSX.utils.book_append_sheet(wb, summaryWs, "📊 Resumo", 0);
+      } else {
+        const consolidatedData = [
+          ["DADOS EDITADOS - PER/DCOMP"],
+          ["Data de Edição: " + new Date().toLocaleDateString("pt-BR")],
+          [],
+        ];
+
+        const headers = ["Campo"];
+        editableData.forEach((item, index) => {
+          headers.push(item.sheetName || `Arquivo ${index + 1}`);
+        });
+        consolidatedData.push(headers);
+
+        const allFields = new Set();
+        editableData.forEach((item) => {
+          Object.keys(item.data).forEach((key) => allFields.add(key));
+        });
+
+        Array.from(allFields).forEach((field) => {
+          const row = [field];
+          editableData.forEach((item) => {
+            row.push(item.data[field] || "");
+          });
+          consolidatedData.push(row);
+        });
+
+        const wsConsolidated = XLSX.utils.aoa_to_sheet(consolidatedData);
+
+        wsConsolidated["!cols"] = [{ wch: 55 }];
+        for (let i = 1; i < headers.length; i++) {
+          wsConsolidated["!cols"].push({ wch: 30 });
+        }
+
+        wsConsolidated["!merges"] = [
+          { s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } },
+          { s: { r: 1, c: 0 }, e: { r: 1, c: headers.length - 1 } },
+        ];
+
+        wsConsolidated["!freeze"] = { xSplit: 1, ySplit: 4 };
+
+        XLSX.utils.book_append_sheet(wb, wsConsolidated, "Dados Consolidados");
+
+        editableData.forEach((item, index) => {
+          const sheetData = [
+            ["INFORMAÇÕES EDITADAS"],
+            ["Planilha: " + (item.sheetName || `Arquivo ${index + 1}`)],
+            ["Data: " + new Date().toLocaleDateString("pt-BR")],
+            [],
+            ["Campo", "Valor"],
+          ];
+
+          for (const [key, value] of Object.entries(item.data)) {
+            sheetData.push([key, value]);
+          }
+
+          const ws = XLSX.utils.aoa_to_sheet(sheetData);
+          ws["!cols"] = [{ wch: 55 }, { wch: 45 }];
+          ws["!merges"] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } },
+            { s: { r: 2, c: 0 }, e: { r: 2, c: 1 } },
+          ];
+
+          const sheetName = (item.sheetName || `Arquivo ${index + 1}`).substring(0, 31);
+          XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        });
+
+        const summaryData = [
+          ["RESUMO DAS EDIÇÕES"],
+          ["Data: " + new Date().toLocaleDateString("pt-BR")],
+          ["Total de Planilhas: " + editableData.length],
+          [],
+          ["Planilha", "Campos Preenchidos", "Campos Vazios"],
+        ];
+
+        editableData.forEach((item) => {
+          const totalFields = Object.keys(item.data).length;
+          const filledFields = Object.values(item.data).filter((v) => v && v.toString().trim() !== "").length;
+          const emptyFields = totalFields - filledFields;
+
+          summaryData.push([
+            item.sheetName || "Sem nome",
+            filledFields,
+            emptyFields,
+          ]);
+        });
+
+        const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+        summaryWs["!cols"] = [{ wch: 40 }, { wch: 20 }, { wch: 20 }];
+        summaryWs["!merges"] = [
+          { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
+          { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } },
+          { s: { r: 2, c: 0 }, e: { r: 2, c: 2 } },
+        ];
+
+        XLSX.utils.book_append_sheet(wb, summaryWs, "📊 Resumo", 0);
+      }
+
+      wb.Props = {
+        Title: currentMode === "extract" ? "Extração PER/DCOMP - Múltiplos Arquivos" : "PER/DCOMP - Dados Editados",
+        Subject: "Dados PER/DCOMP",
+        Author: "Extrator PER/DCOMP",
+        CreatedDate: new Date(),
+      };
+
+      const fileName = `per_dcomp_${currentMode === "extract" ? "extracao" : "editado"}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      if (currentMode === "edit") {
+        showAlert("Planilha exportada com sucesso com suas alterações!", "success");
+      }
+    }
+
+    // Função para exportar para PDF
+    function exportToPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      // Configurações iniciais
+      doc.setFont("helvetica");
+      doc.setFontSize(16);
+      
+      // Título
+      const title = currentMode === "extract" 
+        ? "Relatório de Extração PER/DCOMP" 
+        : "Relatório de Dados Editados PER/DCOMP";
+      
+      doc.text(title, 105, 20, { align: "center" });
+      
+      // Data
+      doc.setFontSize(10);
+      doc.text(`Data: ${new Date().toLocaleDateString("pt-BR")}`, 105, 30, { align: "center" });
+      
+      let yPosition = 50;
+      const pageHeight = doc.internal.pageSize.height;
+      const margin = 20;
+      
+      if (currentMode === "extract") {
+        // Para modo de extração
+        allExtractedData.forEach((item, index) => {
+          // Verifica se precisa de nova página
+          if (yPosition > pageHeight - 50) {
+            doc.addPage();
+            yPosition = 20;
+          }
+          
+          // Nome do arquivo
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.text(`Arquivo ${index + 1}: ${item.fileName}`, margin, yPosition);
+          yPosition += 10;
+          
+          if (item.success) {
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            
+            for (const [key, value] of Object.entries(item.data)) {
+              // Verifica se precisa de nova página
+              if (yPosition > pageHeight - 20) {
+                doc.addPage();
+                yPosition = 20;
+              }
+              
+              const displayValue = value || "Não encontrado";
+              doc.text(`${key}: ${displayValue}`, margin, yPosition);
+              yPosition += 7;
+            }
+          } else {
+            doc.setFont("helvetica", "italic");
+            doc.text(`Erro: ${item.error}`, margin, yPosition);
+            yPosition += 10;
+          }
+          
+          yPosition += 10; // Espaço entre arquivos
+        });
+      } else {
+        // Para modo de edição
+        editableData.forEach((item, index) => {
+          // Verifica se precisa de nova página
+          if (yPosition > pageHeight - 50) {
+            doc.addPage();
+            yPosition = 20;
+          }
+          
+          // Nome da planilha
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.text(`Planilha: ${item.sheetName || "Arquivo " + (index + 1)}`, margin, yPosition);
+          yPosition += 10;
+          
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          
+          for (const [key, value] of Object.entries(item.data)) {
+            // Verifica se precisa de nova página
+            if (yPosition > pageHeight - 20) {
+              doc.addPage();
+              yPosition = 20;
+            }
+            
+            doc.text(`${key}: ${value}`, margin, yPosition);
+            yPosition += 7;
+          }
+          
+          yPosition += 10; // Espaço entre planilhas
+        });
+      }
+      
+      // Salva o PDF
+      const fileName = `per_dcomp_${currentMode === "extract" ? "extracao" : "editado"}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      doc.save(fileName);
+      
+      showAlert("PDF exportado com sucesso!", "success");
+    }
+
+    function exportToCSV() {
+      let csv = "\uFEFF";
+
+      if (currentMode === "extract") {
+        allExtractedData.forEach((item, index) => {
+          csv += `\n"========================================"\n`;
+          csv += `"ARQUIVO ${index + 1}","${item.fileName}"\n`;
+          csv += `"========================================"\n`;
+          csv += '"Campo";"Valor"\n';
+
+          if (item.success) {
+            for (const [key, value] of Object.entries(item.data)) {
+              csv += `"${key}";"${value || "Não encontrado"}"\n`;
+            }
+          } else {
+            csv += `"ERRO";"${item.error}"\n`;
+          }
+          csv += "\n";
+        });
+      } else {
+        editableData.forEach((item, index) => {
+          csv += `\n"========================================"\n`;
+          csv += `"${item.sheetName || "Arquivo " + (index + 1)}"\n`;
+          csv += `"========================================"\n`;
+          csv += '"Campo";"Valor"\n';
+
+          for (const [key, value] of Object.entries(item.data)) {
+            csv += `"${key}";"${value}"\n`;
+          }
+          csv += "\n";
+        });
+      }
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", `per_dcomp_${currentMode === "extract" ? "extracao" : "editado"}_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.style.visibility = "hidden";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showAlert("Arquivo CSV exportado com sucesso!", "success");
+    }
+
+    function showAlert(message, type) {
+      const resultsDiv = document.getElementById("results");
+      const alertDiv = document.createElement("div");
+      alertDiv.className = `alert alert-${type}`;
+      
+      // Adiciona ícone baseado no tipo
+      let icon = "ℹ️";
+      if (type === "error") icon = "❌";
+      if (type === "success") icon = "✅";
+      if (type === "warning") icon = "⚠️";
+      
+      alertDiv.innerHTML = `<span>${icon}</span> ${message}`;
+
+      resultsDiv.insertBefore(alertDiv, resultsDiv.firstChild);
+
+      setTimeout(() => {
+        alertDiv.remove();
+      }, 5000);
+    }
+
+    function reset() {
+      selectedFiles = [];
+      allExtractedData = [];
+      editableData = [];
+      fileInput.value = "";
+      excelInput.value = "";
+      updateFilesList();
+      excelLabel.classList.remove("has-file");
+      excelLabel.innerHTML = "<span>📊 Clique aqui para fazer upload da planilha Excel</span>";
+      loadExcelBtn.style.display = "none";
+      document.getElementById("results").style.display = "none";
+      currentMode = "extract";
+      currentView = "cards";
+      viewToggle.style.display = "none";
+    }
+  </script>
+</body>
+
+</html>
