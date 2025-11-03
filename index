@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle KL Contabilidade</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        header {
+            margin-bottom: 50px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+        
+        .logo {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto 20px;
+        }
+        
+        .tagline {
+            font-size: 1rem;
+            opacity: 0.7;
+            font-style: italic;
+        }
+        
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .project-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 35px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
+        }
+        
+        .project-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .project-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        
+        .project-title {
+            font-size: 1.6rem;
+            margin-bottom: 15px;
+        }
+        
+        .project-description {
+            margin-bottom: 25px;
+            line-height: 1.6;
+            opacity: 0.8;
+            flex-grow: 1;
+        }
+        
+        .project-features {
+            text-align: left;
+            margin-bottom: 25px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 12px;
+        }
+        
+        .project-features h4 {
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .project-features ul {
+            padding-left: 20px;
+        }
+        
+        .project-features li {
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            opacity: 0.8;
+            line-height: 1.4;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            margin-top: auto;
+            font-size: 1.1rem;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .project-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        footer {
+            margin-top: 80px;
+            text-align: center;
+            opacity: 0.7;
+            font-size: 0.9rem;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        @media (max-width: 768px) {
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .project-card {
+                padding: 25px;
+            }
+            
+            .project-icon {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">📊</div>
+            <h1>Controle KL Contabilidade</h1>
+            <p class="subtitle">Sistema integrado de ferramentas fiscais para gestão de documentos do INSS e processos de restituição</p>
+            <p class="tagline">Soluções especializadas para contabilidade eficiente e precisa</p>
+        </header>
+        
+        <div class="projects-grid">
+            <div class="project-card">
+                <div class="project-badge">PDF</div>
+                <div class="project-icon">📄</div>
+                <h2 class="project-title">Extrator de Informações PER/DCOMP</h2>
+                <p class="project-description">
+                    Ferramenta avançada para extrair informações de PDFs de pedidos de restituição (PER/DCOMP) com capacidade de edição e exportação em múltiplos formatos.
+                </p>
+                <div class="project-features">
+                    <h4>📋 Funcionalidades Principais:</h4>
+                    <ul>
+                        <li>Extrai dados de múltiplos PDFs simultaneamente</li>
+                        <li>Identifica CNPJ, número do PER/DCOMP, competência</li>
+                        <li>Detecta créditos, valores de retenção e Selic</li>
+                        <li>Exporta para PDF, Excel e CSV</li>
+                        <li>Interface de edição dos dados extraídos</li>
+                        <li>Visualização em cartões e tabela editável</li>
+                    </ul>
+                </div>
+                <a href="EXTRATOR-E-EDITOR-PERD-COMP.html" class="btn">Abrir Ferramenta</a>
+            </div>
+            
+            <div class="project-card">
+                <div class="project-badge">CSV</div>
+                <div class="project-icon">📊</div>
+                <h2 class="project-title">Leitor de Notas Fiscais INSS</h2>
+                <p class="project-description">
+                    Sistema completo para processar múltiplos arquivos CSV de notas fiscais, calcular valores do INSS e integrar com dados de PERDCOMP.
+                </p>
+                <div class="project-features">
+                    <h4>📈 Funcionalidades Principais:</h4>
+                    <ul>
+                        <li>Processa múltiplos arquivos CSV simultaneamente</li>
+                        <li>Identifica e soma valores do INSS automaticamente</li>
+                        <li>Filtros por data, número da nota e situação</li>
+                        <li>Integração com valores de PERDCOMP</li>
+                        <li>Estatísticas detalhadas e visualização em tempo real</li>
+                        <li>Exportação para Excel e CSV</li>
+                    </ul>
+                </div>
+                <a href="NOTA-INSS+SOMA-PERDCOMP.html" class="btn">Abrir Ferramenta</a>
+            </div>
+            
+            <div class="project-card">
+                <div class="project-badge">RESTITUIÇÃO</div>
+                <div class="project-icon">💰</div>
+                <h2 class="project-title">Extrator de Restituição</h2>
+                <p class="project-description">
+                    Ferramenta especializada para extração de informações de pedidos de restituição com foco em dados da EFD-REINF e cálculos de créditos.
+                </p>
+                <div class="project-features">
+                    <h4>🔍 Funcionalidades Principais:</h4>
+                    <ul>
+                        <li>Processamento em lote de PDFs de restituição</li>
+                        <li>Extrai dados da EFD-REINF e DCTFWeb</li>
+                        <li>Calcula créditos passíveis de restituição</li>
+                        <li>Identifica períodos de apuração e vencimentos</li>
+                        <li>Exportação multiplataforma</li>
+                        <li>Interface intuitiva com visualização flexível</li>
+                    </ul>
+                </div>
+                <a href="EXTRATOR-DE-RESTITUIÇÃO.html" class="btn">Abrir Ferramenta</a>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Controle KL Contabilidade - Sistema de Gestão Fiscal</p>
+            <p style="margin-top: 10px; font-size: 0.8rem;">Ferramentas desenvolvidas para otimizar processos fiscais e de restituição</p>
+        </footer>
+    </div>
+</body>
+</html>
