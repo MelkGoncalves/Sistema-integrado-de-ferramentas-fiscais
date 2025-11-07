@@ -491,13 +491,12 @@ function atualizarEstatisticas() {
     totalINSS += valorINSS;
   });
 
+  // CORREÇÃO: Soma TODOS os PERD COMP, independente de ter notas no mês
   let totalPerdComp = 0;
-  const mesesPresentes = [...new Set(notasNormais.map(item => item.mesAno).filter(Boolean))];
-  mesesPresentes.forEach(mes => {
-    if (perdCompPorMes[mes]) {
-      const valor = typeof perdCompPorMes[mes] === 'object' ? perdCompPorMes[mes].valor : perdCompPorMes[mes];
-      totalPerdComp += valor;
-    }
+  Object.keys(perdCompPorMes).forEach(mes => {
+    const dados = perdCompPorMes[mes];
+    const valor = typeof dados === 'object' ? dados.valor : dados;
+    totalPerdComp += valor;
   });
 
   const totalFinal = Math.max(0, totalINSS - totalPerdComp);
@@ -511,6 +510,15 @@ function atualizarEstatisticas() {
     <div class="stat-card"><div class="stat-label">PERD COMP</div><div class="stat-value">${formatarMoeda(totalPerdComp)}</div></div>
     <div class="stat-card"><div class="stat-label">Total Final</div><div class="stat-value">${formatarMoeda(totalFinal)}</div></div>
   `;
+}
+
+function debugPerdComp() {
+  console.log('PERD COMP registrados:', perdCompPorMes);
+  console.log('Total PERD COMP calculado:', Object.keys(perdCompPorMes).reduce((sum, mes) => {
+    const dados = perdCompPorMes[mes];
+    const valor = typeof dados === 'object' ? dados.valor : dados;
+    return sum + valor;
+  }, 0));
 }
 
 function filtrarDados() {
@@ -556,11 +564,42 @@ function limparTudo() {
 
 function exportarCSV() {
   if (dadosFiltrados.length === 0) { mostrarMensagem('Nenhum dado para exportar', 'warning'); return; }
-  let csv = 'Data;Nº NFS-e;Valor;INSS;Situação;Arquivo\n';
-  dadosFiltrados.forEach(item => { csv += `${item.data};${item.numero};${item.valor};${item.inss};${item.situacao};${item.arquivo}\n`; });
+  
+  let csv = 'RELATÓRIO DE NOTAS FISCAIS INSS\n';
+  csv += 'Data;Nº NFS-e;Valor;INSS;Situação;Arquivo\n';
+  dadosFiltrados.forEach(item => { 
+    csv += `${item.data};${item.numero};${item.valor};${item.inss};${item.situacao};${item.arquivo}\n`; 
+  });
+
+  // Cálculos para estatísticas
+  const notasNormais = dadosFiltrados.filter(item => item.situacao === 'Normal');
+  let totalINSS = 0;
+  notasNormais.forEach(item => {
+    const valorINSS = converterMoedaParaNumero(item.inss);
+    totalINSS += valorINSS;
+  });
+
+  let totalPerdComp = 0;
+  Object.keys(perdCompPorMes).forEach(mes => {
+    const dados = perdCompPorMes[mes];
+    const valor = typeof dados === 'object' ? dados.valor : dados;
+    totalPerdComp += valor;
+  });
+
+  const totalFinal = Math.max(0, totalINSS - totalPerdComp);
+
+  // Adicionar estatísticas no CSV
+  csv += '\nRESUMO E ESTATÍSTICAS\n';
+  csv += `Total de Notas;${dadosFiltrados.length}\n`;
+  csv += `Notas Normais;${notasNormais.length}\n`;
+  csv += `Notas Canceladas;${dadosFiltrados.length - notasNormais.length}\n`;
+  csv += `Total INSS (Normais);${formatarMoeda(totalINSS)}\n`;
+  csv += `Total PERD COMP;${formatarMoeda(totalPerdComp)}\n`;
+  csv += `TOTAL FINAL;${formatarMoeda(totalFinal)}\n`;
 
   if (Object.keys(perdCompPorMes).length > 0) {
-    csv += '\nPERD COMP por Mês\nMês;Valor;Nº Restituição;Compensação\n';
+    csv += '\nPERD COMP POR MÊS\n';
+    csv += 'Mês;Valor;Nº Restituição;Compensação\n';
     Object.keys(perdCompPorMes).forEach(mes => {
       const dados = perdCompPorMes[mes];
       const valor = typeof dados === 'object' ? dados.valor : dados;
@@ -575,21 +614,55 @@ function exportarCSV() {
   link.href = URL.createObjectURL(blob);
   link.download = 'notas_fiscais_consolidado.csv';
   link.click();
-  mostrarMensagem('CSV exportado com sucesso');
+  mostrarMensagem('CSV exportado com sucesso! Inclui Total Final.');
 }
 
 function exportarExcel() {
-  if (dadosFiltrados.length === 0) { mostrarMensagem('Nenhum dado para exportar', 'warning'); return; }
+  if (dadosFiltrados.length === 0) { 
+    mostrarMensagem('Nenhum dado para exportar', 'warning'); 
+    return; 
+  }
 
   const ws_data = [];
+  
+  // Cabeçalho das notas fiscais
+  ws_data.push(['RELATÓRIO DE NOTAS FISCAIS INSS']);
   ws_data.push(['Data','Nº NFS-e','Valor','INSS','Situação','Arquivo']);
   dadosFiltrados.forEach(item => {
     ws_data.push([item.data, item.numero, item.valor, item.inss, item.situacao, item.arquivo]);
   });
 
+  // Cálculos para estatísticas
+  const notasNormais = dadosFiltrados.filter(item => item.situacao === 'Normal');
+  let totalINSS = 0;
+  notasNormais.forEach(item => {
+    const valorINSS = converterMoedaParaNumero(item.inss);
+    totalINSS += valorINSS;
+  });
+
+  let totalPerdComp = 0;
+  Object.keys(perdCompPorMes).forEach(mes => {
+    const dados = perdCompPorMes[mes];
+    const valor = typeof dados === 'object' ? dados.valor : dados;
+    totalPerdComp += valor;
+  });
+
+  const totalFinal = Math.max(0, totalINSS - totalPerdComp);
+
+  // Adicionar estatísticas
+  ws_data.push([]);
+  ws_data.push(['RESUMO E ESTATÍSTICAS']);
+  ws_data.push(['Total de Notas:', dadosFiltrados.length]);
+  ws_data.push(['Notas Normais:', notasNormais.length]);
+  ws_data.push(['Notas Canceladas:', dadosFiltrados.length - notasNormais.length]);
+  ws_data.push(['Total INSS (Normais):', formatarMoeda(totalINSS)]);
+  ws_data.push(['Total PERD COMP:', formatarMoeda(totalPerdComp)]);
+  ws_data.push(['TOTAL FINAL:', formatarMoeda(totalFinal)]);
+
+  // PERD COMP por mês
   if (Object.keys(perdCompPorMes).length > 0) {
     ws_data.push([]);
-    ws_data.push(['PERD COMP por Mês']);
+    ws_data.push(['PERD COMP POR MÊS']);
     ws_data.push(['Mês','Valor','Nº Restituição','Compensação']);
     Object.keys(perdCompPorMes).forEach(mes => {
       const dados = perdCompPorMes[mes];
@@ -600,18 +673,48 @@ function exportarExcel() {
     });
   }
 
+  // Criar a planilha sem formatação complexa que pode causar erro
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(ws_data);
-  XLSX.utils.book_append_sheet(wb, ws, 'Notas');
-  const wbout = XLSX.write(wb, { bookType:'xlsx', type:'array' });
-  const blob = new Blob([wbout], { type: 'application/octet-stream' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'notas_fiscais_consolidado.xlsx';
-  a.click();
-  URL.revokeObjectURL(url);
-  mostrarMensagem('Excel (.xlsx) exportado com sucesso');
+  
+  // Ajustar largura das colunas aproximadamente
+  const colWidths = [
+    { wch: 12 }, // Data
+    { wch: 15 }, // Nº NFS-e
+    { wch: 15 }, // Valor
+    { wch: 15 }, // INSS
+    { wch: 12 }, // Situação
+    { wch: 20 }  // Arquivo
+  ];
+  ws['!cols'] = colWidths;
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Notas Fiscais');
+  
+  try {
+    const wbout = XLSX.write(wb, { 
+      bookType: 'xlsx', 
+      type: 'array',
+      cellStyles: false // Desativa estilos complexos
+    });
+    
+    const blob = new Blob([wbout], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'notas_fiscais_consolidado.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    mostrarMensagem('Excel (.xlsx) exportado com sucesso! Inclui Total Final.');
+  } catch (error) {
+    console.error('Erro ao exportar Excel:', error);
+    mostrarMensagem('Erro ao exportar Excel. Tente novamente.', 'error');
+  }
 }
 
 document.getElementById('valorPerdComp').addEventListener('input', function(e) {
