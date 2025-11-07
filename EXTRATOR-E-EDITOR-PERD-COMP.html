@@ -125,8 +125,15 @@
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .file-input-wrapper {
@@ -242,7 +249,7 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
       transition: left 0.5s;
     }
 
@@ -502,8 +509,13 @@
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     .progress-bar {
@@ -681,8 +693,9 @@
 
 <body>
   <div style="position: fixed; top: 20px; left: 20px; z-index: 1000;">
-      <a href="index.html" style="display: inline-block; background: #667eea; color: white; padding: 12px 20px; border-radius: 25px; text-decoration:   none; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s ease; border: 2px solid white;">
-        🏠 Voltar ao Início
+    <a href="index.html"
+      style="display: inline-block; background: #667eea; color: white; padding: 12px 20px; border-radius: 25px; text-decoration:   none; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s ease; border: 2px solid white;">
+      🏠 Voltar ao Início
     </a>
   </div>
 
@@ -707,7 +720,7 @@
 
       <div id="extractTab" class="tab-content active">
         <h2><span>📄</span> Upload de PDFs (Múltiplos Arquivos)</h2>
-        
+
         <div class="info-box">
           <h3><span>ℹ️</span> Como usar:</h3>
           <ul>
@@ -716,7 +729,7 @@
             <li>Revise os dados extraídos e exporte no formato desejado</li>
           </ul>
         </div>
-        
+
         <div class="file-input-wrapper">
           <input type="file" id="pdfUpload" accept=".pdf" multiple />
           <label for="pdfUpload" class="file-input-label" id="fileLabel">
@@ -759,9 +772,9 @@
         <span>📋</span>
         Informações Extraídas
       </h2>
-      
+
       <div class="stats" id="statsSection"></div>
-      
+
       <div class="view-toggle" id="viewToggle" style="display: none">
         <button onclick="switchView('cards')" id="cardsViewBtn" class="active">
           <span>🃏</span> Visualização em Cartões
@@ -839,7 +852,7 @@
 
     function switchView(view) {
       currentView = view;
-      
+
       if (view === "cards") {
         document.getElementById("cardsView").style.display = "block";
         document.getElementById("tableView").style.display = "none";
@@ -850,7 +863,7 @@
         document.getElementById("tableView").style.display = "block";
         cardsViewBtn.classList.remove("active");
         tableViewBtn.classList.add("active");
-        
+
         if (currentMode === "extract") {
           displayExtractedDataAsTable();
         }
@@ -953,22 +966,19 @@
         "Número do PER/DCOMP": extractPattern(text, /(\d{5}\.\d{5}\.\d{6}\.\d\.\d\.\d{2}-\d{4})/),
         "Nº do PER/DCOMP Inicial": extractPattern(text, /N[ºo]?\s*do\s*PER\/DCOMP\s*Inicial[:\s]*([\d\.\-\s]{20,60})/i),
         Competência: extractPattern(text, /Compet[êe]ncia[:\s]+([^\s]+)/i),
-        "Selic Acumulada": extractPattern(text, /Selic Acumulada[:\s]+([\d,%]+)/i),
         "Crédito Passível de Restituição Apurado no Documento Inicial": extractPattern(text, /Cr[ée]dito Pass[ií]vel de Restitui[çc][ãa]o Apurado no Documento Inicial[:\s]+([\d,.]+)/i),
-        "Crédito Original na Data da Entrega": (function () {
+        // USANDO O NOME DE EXIBIÇÃO DIRETAMENTE
+        "Saldo Inicial": (function () {
           let match = text.match(/Cr[ée]dito\s*Original\s*na\s*Data\s*da\s*Entrega[\s:–-]*([\d.,]+)/i);
           if (!match) {
             match = text.match(/([\d]{1,3}(?:\.\d{3})*,\d{2})\s*Cr[ée]dito\s*Original\s*na\s*Data\s*da\s*Entrega/i);
           }
           return match ? match[1].trim() : null;
         })(),
-        "Crédito Atualizado": extractPattern(text, /Cr[ée]dito Atualizado[:\s]+([\d,.]+)/i),
-        "Saldo do Crédito Original": extractPattern(text, /Saldo do Cr[ée]dito Original[:\s]+([\d,.]+)/i),
+        // USANDO O NOME DE EXIBIÇÃO DIRETAMENTE
+        "Saldo Final": extractPattern(text, /Saldo do Cr[ée]dito Original[:\s]+([\d,.]+)/i),
         "Período de Apuração": extractPattern(text, /Per[ií]odo de Apura[çc][ãa]o[:\s]+([^\s]+)/i),
         "Data de Vencimento": extractPattern(text, /Data de Vencimento.*?[:\s]+([\d\/]+)/i),
-        "Recibo DCTFWeb": extractPattern(text, /Recibo.*?DCTFWeb[:\s]+([\d]+)/i),
-        Multa: extractPattern(text, /Multa[:\s]+([\d,.]+)/i),
-        Juros: extractPattern(text, /Juros[:\s]+([\d,.]+)/i),
         "Total dos Débitos deste Documento": extractPattern(text, /Total dos D[ée]bitos deste Documento[:\s]+([\d,.]+)/i),
       };
 
@@ -1146,7 +1156,7 @@
       });
 
       Array.from(allFields).forEach((field) => {
-        html += `<tr><td><strong>${field}</strong></td>`;
+        html += `<tr><td><strong>${getDisplayName(field)}</strong></td>`;
         editableData.forEach((item, index) => {
           const value = item.data[field] || "";
           html += `<td><input type="text" value="${value}" onchange="updateCell(${index}, '${field.replace(/'/g, "\\'")}', this.value)"></td>`;
@@ -1180,7 +1190,7 @@
       });
 
       Array.from(allFields).forEach((field) => {
-        html += `<tr><td><strong>${field}</strong></td>`;
+        html += `<tr><td><strong>${getDisplayName(field)}</strong></td>`;
         allExtractedData.forEach((item) => {
           if (item.success) {
             const value = item.data[field] || "Não encontrado";
@@ -1199,6 +1209,11 @@
 
     function updateCell(recordIndex, field, value) {
       editableData[recordIndex].data[field] = value;
+    }
+
+    function getDisplayName(fieldName) {
+      // Agora os nomes já são os mesmos, então retorna o próprio nome
+      return fieldName;
     }
 
     function displayAllResults() {
@@ -1247,11 +1262,11 @@
             const valueClass = value ? "field-value" : "field-value not-found";
 
             html += `
-              <div class="field">
-                <label>${key}:</label>
-                <div class="${valueClass}">${displayValue}</div>
-              </div>
-            `;
+  <div class="field">
+    <label>${getDisplayName(key)}:</label>
+    <div class="${valueClass}">${displayValue}</div>
+  </div>
+`;
           }
         } else {
           html += `<div class="alert alert-error">❌ Erro ao processar: ${item.error}</div>`;
@@ -1533,26 +1548,26 @@
     function exportToPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      
+
       // Configurações iniciais
       doc.setFont("helvetica");
       doc.setFontSize(16);
-      
+
       // Título
-      const title = currentMode === "extract" 
-        ? "Relatório de Extração PER/DCOMP" 
+      const title = currentMode === "extract"
+        ? "Relatório de Extração PER/DCOMP"
         : "Relatório de Dados Editados PER/DCOMP";
-      
+
       doc.text(title, 105, 20, { align: "center" });
-      
+
       // Data
       doc.setFontSize(10);
       doc.text(`Data: ${new Date().toLocaleDateString("pt-BR")}`, 105, 30, { align: "center" });
-      
+
       let yPosition = 50;
       const pageHeight = doc.internal.pageSize.height;
       const margin = 20;
-      
+
       if (currentMode === "extract") {
         // Para modo de extração
         allExtractedData.forEach((item, index) => {
@@ -1561,24 +1576,24 @@
             doc.addPage();
             yPosition = 20;
           }
-          
+
           // Nome do arquivo
           doc.setFontSize(12);
           doc.setFont("helvetica", "bold");
           doc.text(`Arquivo ${index + 1}: ${item.fileName}`, margin, yPosition);
           yPosition += 10;
-          
+
           if (item.success) {
             doc.setFont("helvetica", "normal");
             doc.setFontSize(10);
-            
+
             for (const [key, value] of Object.entries(item.data)) {
               // Verifica se precisa de nova página
               if (yPosition > pageHeight - 20) {
                 doc.addPage();
                 yPosition = 20;
               }
-              
+
               const displayValue = value || "Não encontrado";
               doc.text(`${key}: ${displayValue}`, margin, yPosition);
               yPosition += 7;
@@ -1588,7 +1603,7 @@
             doc.text(`Erro: ${item.error}`, margin, yPosition);
             yPosition += 10;
           }
-          
+
           yPosition += 10; // Espaço entre arquivos
         });
       } else {
@@ -1599,35 +1614,35 @@
             doc.addPage();
             yPosition = 20;
           }
-          
+
           // Nome da planilha
           doc.setFontSize(12);
           doc.setFont("helvetica", "bold");
           doc.text(`Planilha: ${item.sheetName || "Arquivo " + (index + 1)}`, margin, yPosition);
           yPosition += 10;
-          
+
           doc.setFont("helvetica", "normal");
           doc.setFontSize(10);
-          
+
           for (const [key, value] of Object.entries(item.data)) {
             // Verifica se precisa de nova página
             if (yPosition > pageHeight - 20) {
               doc.addPage();
               yPosition = 20;
             }
-            
+
             doc.text(`${key}: ${value}`, margin, yPosition);
             yPosition += 7;
           }
-          
+
           yPosition += 10; // Espaço entre planilhas
         });
       }
-      
+
       // Salva o PDF
       const fileName = `per_dcomp_${currentMode === "extract" ? "extracao" : "editado"}_${new Date().toISOString().slice(0, 10)}.pdf`;
       doc.save(fileName);
-      
+
       showAlert("PDF exportado com sucesso!", "success");
     }
 
@@ -1675,7 +1690,7 @@
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       showAlert("Arquivo CSV exportado com sucesso!", "success");
     }
 
@@ -1683,13 +1698,13 @@
       const resultsDiv = document.getElementById("results");
       const alertDiv = document.createElement("div");
       alertDiv.className = `alert alert-${type}`;
-      
+
       // Adiciona ícone baseado no tipo
       let icon = "ℹ️";
       if (type === "error") icon = "❌";
       if (type === "success") icon = "✅";
       if (type === "warning") icon = "⚠️";
-      
+
       alertDiv.innerHTML = `<span>${icon}</span> ${message}`;
 
       resultsDiv.insertBefore(alertDiv, resultsDiv.firstChild);
