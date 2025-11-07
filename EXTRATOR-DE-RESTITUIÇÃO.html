@@ -944,36 +944,25 @@
       return match ? match[1].trim() : null;
     }
 
-   function extractFields(text) {
-  const fields = {
-    CNPJ: extractPattern(text, /CNPJ[:\s]+(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/i),
+    function extractFields(text) {
+      const fields = {
+        CNPJ: extractPattern(text, /CNPJ[:\s]+(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/i),
 
-    "Número do PER/DCOMP": extractPattern(text, /(\d{5}\.\d{5}\.\d{6}\.\d\.\d\.\d{2}-\d{4})/),
+        "Número do PER/DCOMP": extractPattern(text, /(\d{5}\.\d{5}\.\d{6}\.\d\.\d\.\d{2}-\d{4})/),
 
-    Competência: extractPattern(text, /Compet[êe]ncia[:\s]+([^\s]+)/i),
+        Competência: extractPattern(text, /Compet[êe]ncia[:\s]+([^\s]+)/i),
 
-    "Crédito Original na Data da Entrega": (function () {
-      let match = text.match(/Cr[ée]dito\s*Original\s*na\s*Data\s*da\s*Entrega[\s:–-]*([\d.,]+)/i);
-      if (!match) {
-        match = text.match(/([\d]{1,3}(?:\.\d{3})*,\d{2})\s*Cr[ée]dito\s*Original\s*na\s*Data\s*da\s*Entrega/i);
-      }
-      return match ? match[1].trim() : null;
-    })(),
+        "Crédito Original na Data da Entrega": (function () {
+          let match = text.match(/Cr[ée]dito\s*Original\s*na\s*Data\s*da\s*Entrega[\s:–-]*([\d.,]+)/i);
+          if (!match) {
+            match = text.match(/([\d]{1,3}(?:\.\d{3})*,\d{2})\s*Cr[ée]dito\s*Original\s*na\s*Data\s*da\s*Entrega/i);
+          }
+          return match ? match[1].trim() : null;
+        })()
+      };
 
-    "Número da EFD-REINF": extractPattern(text, /N[úu]mero.*?EFD.?REINF[:\s]*([^\s]+)/i),
-
-    // 🔹 Aqui está o campo correto da data de fechamento
-    "Data de Fechamento EFD-REINF": (function () {
-      const match = text.match(/Data.*?Fechamento.*?EFD[-\s]?REINF[:\s]*\n?\s*(\d{2}\/\d{2}\/\d{4})/i)
-        || text.match(/Data\s*de\s*Fechamento\s*EFD[-\s]?REINF[\s\S]{0,80}?(\d{2}\/\d{2}\/\d{4})/i);
-      return match ? match[1].trim() : "Não encontrado";
-    })(),
-
-    "Valor das Retenções": extractPattern(text, /Valor.*?Reten[çc][õo]es[:\s]*([\d.,]+)/i),
-  };
-
-  return fields;
-}
+      return fields;
+    }
 
     async function processPDFs() {
       if (selectedFiles.length === 0) {
@@ -1183,10 +1172,7 @@
           "CNPJ",
           "Número do PER/DCOMP",
           "Competência",
-          "Crédito Original na Data da Entrega",
-          "Número da EFD-REINF",
-          "Data de Fechamento EFD-REINF",
-          "Valor das Retenções"
+          "Crédito Original na Data da Entrega"
         ];
 
         fields.forEach((fieldName) => {
@@ -1218,10 +1204,7 @@
         "CNPJ",
         "Número do PER/DCOMP",
         "Competência",
-        "Crédito Original na Data da Entrega",
-        "Número da EFD-REINF",
-        "Data de Fechamento EFD-REINF",
-        "Valor das Retenções"
+        "Crédito Original na Data da Entrega"
       ];
 
       let html = `
@@ -1343,10 +1326,7 @@
           "CNPJ",
           "Número do PER/DCOMP",
           "Competência",
-          "Crédito Original na Data da Entrega",
-          "Número da EFD-REINF",
-          "Data de Fechamento EFD-REINF",
-          "Valor das Retenções"
+          "Crédito Original na Data da Entrega"
         ];
 
         fields.forEach(field => {
@@ -1385,10 +1365,7 @@
           "CNPJ",
           "Número do PER/DCOMP",
           "Competência",
-          "Crédito Original na Data da Entrega",
-          "Número da EFD-REINF",
-          "Data de Fechamento EFD-REINF",
-          "Valor das Retenções"
+          "Crédito Original na Data da Entrega"
         ];
 
         fields.forEach(field => {
@@ -1412,10 +1389,7 @@
         "CNPJ",
         "Número do PER/DCOMP",
         "Competência",
-        "Crédito Original na Data da Entrega",
-        "Número da EFD-REINF",
-        "Data de Fechamento EFD-REINF",
-        "Valor das Retenções"
+        "Crédito Original na Data da Entrega"
       ];
 
       let csvContent = fields.join(";") + "\n";
@@ -1428,10 +1402,7 @@
           fileData.data["CNPJ"] || "",
           fileData.data["Número do PER/DCOMP"] || "",
           fileData.data["Competência"] || "",
-          fileData.data["Crédito Original na Data da Entrega"] || "",
-          fileData.data["Número da EFD-REINF"] || "",
-          fileData.data["Data de Fechamento EFD-REINF"] || "",
-          fileData.data["Valor das Retenções"] || ""
+          fileData.data["Crédito Original na Data da Entrega"] || ""
         ];
 
         csvContent += row.join(";") + "\n";
@@ -1457,10 +1428,7 @@
           "CNPJ",
           "Número do PER/DCOMP",
           "Competência",
-          "Crédito Original na Data da Entrega",
-          "Número da EFD-REINF",
-          "Data de Fechamento EFD-REINF",
-          "Valor das Retenções"
+          "Crédito Original na Data da Entrega"
         ];
 
         const values = fields.map(field => {
